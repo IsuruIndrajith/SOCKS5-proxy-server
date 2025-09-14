@@ -6,7 +6,7 @@ const net = require("net");
 
 // Config: read from env vars or fallback defaults
 const LISTEN_PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 1080;
-const AUTH_USER = process.env.AUTH_USER || "intern";
+const AUTH_USER = process.env.AUTH_USER || "user01";
 const AUTH_PASS = process.env.AUTH_PASS || "password123";
 
 console.log(`Starting minimal SOCKS5 proxy on port ${LISTEN_PORT}`);
