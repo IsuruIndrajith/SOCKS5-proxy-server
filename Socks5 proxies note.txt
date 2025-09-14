@@ -1,0 +1,7 @@
+Socks5 proxies have extra privacy and speed
+lends IP addresses gives access to Geo-restricted contents
+Socks5 proxies uses Socks Internet Protocol
+
+Pros: encrypting data - increased privacy
+suitable for diverse applications 
+anonymity - tracking protection
