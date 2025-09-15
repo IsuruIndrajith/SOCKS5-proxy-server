@@ -1,20 +1,20 @@
-// socks5.js
-// Minimal SOCKS5 proxy with username/password auth (RFC1928 + RFC1929).
-// Uses only Node's standard library (net, dns if needed).
-
 const net = require("net");
+// net is the NOde's built-in TCP library
 
-// Config: read from env vars or fallback defaults
+// Configurations
 const LISTEN_PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 1080;
 const AUTH_USER = process.env.AUTH_USER || "user01";
 const AUTH_PASS = process.env.AUTH_PASS || "password123";
 
-console.log(`Starting minimal SOCKS5 proxy on port ${LISTEN_PORT}`);
+console.log(`Starting SOCKS5 proxy on port ${LISTEN_PORT}`);
 console.log(`Auth username: "${AUTH_USER}" (change via AUTH_USER / AUTH_PASS env vars)`);
 
+// create a TCP server using net.createServer
 const server = net.createServer((clientSocket) => {
   const clientAddr = `${clientSocket.remoteAddress}:${clientSocket.remotePort}`;
-  // First step: read method selection from client
+  // client address for logging with combined remote IP and port
+
+  // the following wait s for the first data chunk from the client
   clientSocket.once("data", (chunk) => {
     try {
       handleMethodSelection(chunk, clientSocket, clientAddr);
@@ -25,17 +25,19 @@ const server = net.createServer((clientSocket) => {
   });
 
   clientSocket.on("error", (err) => {
-    // Avoid crashing on client errors
     console.error(`Client socket error (${clientAddr}):`, err.message);
   });
 });
 
+// on the server, start listening
 server.on("error", (err) => {
   console.error("Server error:", err);
 });
 
+// accepting the connections
 server.listen(LISTEN_PORT);
 
+// handle method selections
 function handleMethodSelection(buf, clientSocket, clientAddr) {
   // buf: VER(1) NMETHODS(1) METHODS...
   if (buf.length < 2) {
@@ -49,7 +51,8 @@ function handleMethodSelection(buf, clientSocket, clientAddr) {
   }
   const nmethods = buf[1];
   const methods = buf.slice(2, 2 + nmethods);
-  // We require username/password (0x02). If client doesn't offer it, refuse.
+
+  // here it is required username/password. If client doesn't offer it, refuse.
   const METHOD_USERNAME = 0x02;
   if (!methods.includes(METHOD_USERNAME)) {
     // reply NO ACCEPTABLE METHODS (0xFF)
@@ -66,8 +69,8 @@ function handleMethodSelection(buf, clientSocket, clientAddr) {
   });
 }
 
+// handle username and password authentication
 function handleUserPassAuth(buf, clientSocket, clientAddr) {
-  // RFC1929: VER(1)=0x01, ULEN(1), UNAME, PLEN(1), PASSWD
   if (buf.length < 2) {
     clientSocket.end();
     return;
@@ -100,6 +103,7 @@ function handleUserPassAuth(buf, clientSocket, clientAddr) {
   });
 }
 
+// parse CONNECT request and open remote socket
 function handleSocksRequest(buf, clientSocket, clientAddr) {
   // Request: VER(1)=0x05, CMD(1)=0x01 connect, RSV(1)=0x00, ATYP(1), DST.ADDR, DST.PORT(2)
   if (buf.length < 7) { clientSocket.end(); return; }
@@ -147,7 +151,7 @@ function handleSocksRequest(buf, clientSocket, clientAddr) {
 
   console.log(`Request from ${clientAddr} -> ${addr}:${port}`);
 
-  // Attempt to connect to destination
+  //connect to destination
   const remoteSocket = net.createConnection({ host: addr, port: port }, () => {
     // On success, send success reply.
     // Use BND.ADDR = local address of the outgoing connection, BND.PORT = local port
@@ -166,18 +170,19 @@ function handleSocksRequest(buf, clientSocket, clientAddr) {
     remoteSocket.destroy();
   });
 
-  // Keep error handling on client
   clientSocket.on("close", () => {
     remoteSocket.destroy();
   });
 }
 
+// Send Socks Reply(Negative)
 function sendSocksReply(sock, rep) {
-  // rep: reply field. Send minimal IPv4 0.0.0.0:0 as BND
+  
   const resp = Buffer.from([0x05, rep, 0x00, 0x01, 0,0,0,0, 0,0]);
   sock.write(resp);
 }
 
+// Send Socks Reply(Success)
 function sendSocksSuccess(sock, bndAddr, bndPort) {
   // Decide whether IPv4, IPv6 or domain
   let resp;
