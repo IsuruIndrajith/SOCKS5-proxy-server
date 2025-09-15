@@ -1,27 +1,32 @@
-## 📝 README.md
-
-````markdown
 # Simple SOCKS5 Proxy with Username/Password Auth
 
 A minimal SOCKS5 proxy written in Node.js using only standard libraries (`net` and `dns`).  
 Supports basic username/password authentication and tunnels raw TCP traffic.
 
 ---
+## How it works
+
+01) Start the server (node socks5.js) — it listens on PORT (default 1080).
+02) Client connects and sends method selection. Server insists on username/password (0x02).
+03) Client sends username/password; server checks against AUTH_USER/AUTH_PASS.
+04) After successful auth, client sends CONNECT request with dest address and port.
+05) Server connects to destination and, on success, replies REP=0x00 and starts piping bytes both ways (socket.pipe()), achieving tunneling.
+06) The server logs source IP and requested destination host:port.
 
 ## 🚀 How to Run
 
 1. **Clone & Install**
    ```bash
-   git clone https://github.com/<your-username>/<your-repo>.git
-   cd <your-repo>
+   git clone https://github.com/IsuruIndrajith/SOCKS5-proxy-server.git
+   cd SOCKS5-proxy-server
    npm install   # only if you added a package.json for scripts/env; not required for pure Node
-````
+
 
 2. **Set Credentials (Optional)**
    Default credentials are:
 
    ```
-   USERNAME: intern
+   USERNAME: user01
    PASSWORD: password123
    ```
 
@@ -59,16 +64,22 @@ Supports basic username/password authentication and tunnels raw TCP traffic.
 Fetch your external IP through the proxy using `curl`:
 
 ```bash
-curl --proxy socks5://intern:password123@127.0.0.1:1080 https://ipinfo.io
+curl.exe --socks5 127.0.0.1:1080 --proxy-user user01:password123 https://ipinfo.io
 ```
 
 If everything works, you’ll see JSON output like:
 
 ```json
 {
-  "ip": "203.x.x.x",
-  "city": "...",
-  ...
+  "ip": "192.248.58.1",
+  "city": "Jaffna",
+  "region": "Northern Province",
+  "country": "LK",
+  "loc": "9.6684,80.0074",
+  "org": "AS38229 Lanka Education & Research Network, NREN",
+  "postal": "40000",
+  "timezone": "Asia/Colombo",
+  "readme": "https://ipinfo.io/missingauth"
 }
 ```
 
@@ -85,8 +96,9 @@ README.md        # this file
 
 ## 🛠️ Notes
 
-* Implements only the essential subset of RFC1928 for CONNECT requests.
-* Uses Node’s built-in `net` module for TCP tunneling.
-* Perfect for learning or small internal tools; **not** production-hardened.
-
-```
+* Implemented SOCKS5 handshake (method selection + username/password).
+* Implemented CONNECT request parsing for IPv4 / domain / IPv6.
+* Established remote connection and piped streams to tunnel traffic.
+* Logs source IP and destination host:port.
+* Configurable port and credentials via environment variables.
+  
